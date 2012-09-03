@@ -1,0 +1,118 @@
+% \VignetteIndexEntry{mlPhaser}
+% \VignettePackage{mlPhaser}
+
+\documentclass[a4paper]{article}
+\usepackage{url}
+\title{mlPhaser}
+\author{Dave T. Gerrard\\
+	\texttt{david.gerrard@manchester.ac.uk}}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Select combinations of known haplotypes to fully explain multi-locus genotypes. Suited to highly diverse but well characterised systems such as HLA. Ambiguous cases can be ranked using known haplotype frequencies.
+\end{abstract}
+
+\section{Introduction}
+
+The mlPhaser package attempts to find groups of haplotypes that are consistent with and fully explain a genotype. This task can be difficult when there are very many possible haplotypes. The package does not examine all possible haplotypes (see other packages for that, e.g. haplo.stats) but instead works from a list of `known' haplotypes. Optionally, independently determined haplotype frequencies are used to select from ambiguous cases.
+
+The package was developed for multi-locus HLA data for which there may be hundreds of candidate alleles at each locus and thousands of known haplotypes to choose from. The functions take in genotypes and haplotypes in a simple format and should be amenable to most multi-locus datasets. The algorithms are designed to work with an arbitrary ploidy level so should be useable with triploid, tetraploid and systems of greater ploidy. 
+
+\section{Installation}
+
+Install the package from your R session. Use the packages menu or the following command.
+<<label=Install mlPhaser,eval=FALSE>>=
+install.packages("mlPhaser_0.01.zip", repos=NULL)
+@
+
+
+\section{Using mlPhaser}
+Start by loading the library.
+
+<<label=Load library>>=
+library(mlPhaser)
+@
+
+\subsection{Load haplotype and genotype data}
+
+Typical usage will require a table of genotypes and a table of known haplotypes. 
+
+The haplotypes are easy to create
+
+<<label=Load library, keep.source=TRUE>>=
+haplotypes <- data.frame(	A= c("a","b","c","a","b","c","b"),
+				B= c("a","b","c","b","c","a","a"),
+				C= c("a","b","c","b","c","a","a") )
+rownames(haplotypes) <- apply(haplotypes, 1, paste,sep="" , collapse="")
+haplotypes
+@
+
+In many cases, these known haplotypes will come with frequency data, this can be used later to sort candidate haplotype groups.
+
+<<label=HaplFreqs, keep.source=TRUE>>=
+haploFreqs <- c(0.4, 0.3, 0.15, 0.07,0.05, 0.02, 0.01)
+names(haploFreqs) <- rownames(haplotypes)
+haploFreqs
+@
+
+Genotypes are encoded similarly but with multiple columns per locus. Here is a simple genotype heterozygous at each of three loci. 
+
+<<label=thisGenotype, keep.source=TRUE>>=
+thisGenotype <- data.frame(A.1="a", A.2="b", B.1="a", B.2="b",C.1="a", C.2="b")
+thisGenotype
+@
+
+
+
+The function simGenoFromHaplo can be used to simulate a set of genotypes.
+
+<<label=simGenos, keep.source=T>>=
+my.genotypes <- simGenoFromHaplo(haploTable=haplotypes, haploFreqs=haploFreqs , 
+		n=20, ploidy=2)
+head(my.genotypes)
+@
+
+\subsection{Valid haplotype groups.}
+The funciton getValidHaploGroups returns groups of haplotypes that fully explain the genotype. There may be none, one or more groups per genotype.
+
+<<label=getValid, keep.source=T>>=
+my.valid.groups <- getValidHaploGroups(thisGenotype,haplotypes)
+my.valid.groups
+@
+
+The object returned by getValidHaploGroups is a list of lists. Another function, phaseReport, is available to get valid groups for a set of genotypes. phaseReport also formats the results into a table.
+
+<<label=phaseReport, keep.source=T>>=
+phaseReport(thisGenotype,haplotypes)
+phaseReport(my.genotypes,haplotypes) 	# a full table of genotypes
+@
+
+A set of haplotype frequencies can be used to order groups of haplotypes. Currently this is done by simply multiplying the probabilities of each haplotype within the group.
+
+<<label=phaseReportWithFreqs, keep.source=T>>=
+# use haplotype frequencies to rank candidate haplotype groups.
+phaseReport(thisGenotype,haplotypes, haploFreqs)
+# return only the best haplotype group for each genotype. 
+# outFormat="all" is the default
+phaseReport(thisGenotype,haplotypes, haploFreqs, outFormat="top") 
+# get phase report on all genotypes
+phaseReport(my.genotypes,haplotypes, haploFreqs, outFormat="all")
+# Same but only return the top result for each genotype
+phaseReport(my.genotypes,haplotypes, haploFreqs, outFormat="top")
+@
+
+\section{TO-DO}
+More sophisticated frequency/probability integration. Export results. 
+
+
+\section{R Session}
+
+\begin{scriptsize}
+<<label=Session info>>=
+sessionInfo()
+@
+\end{scriptsize}
+
+\end{document}
